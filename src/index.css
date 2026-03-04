@@ -1,0 +1,256 @@
+#lovable-badge {
+  display: none !important;
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* FitSoul Design System
+   Dark mode: default
+   Light mode: via .light class on <html>
+   All colors MUST be HSL.
+*/
+
+@layer base {
+  /* ── DARK (default) ── */
+  :root {
+    --background: 120 7% 6%;
+    --foreground: 0 0% 93%;
+
+    --card: 120 5% 11%;
+    --card-foreground: 0 0% 93%;
+
+    --popover: 120 5% 11%;
+    --popover-foreground: 0 0% 93%;
+
+    --primary: 10 99% 55%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 120 5% 16%;
+    --secondary-foreground: 0 0% 93%;
+
+    --muted: 120 5% 14%;
+    --muted-foreground: 0 0% 50%;
+
+    --accent: 10 99% 55%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 120 5% 18%;
+    --input: 120 5% 18%;
+    --ring: 10 99% 55%;
+
+    --radius: 0.75rem;
+
+    --sidebar-background: 120 5% 9%;
+    --sidebar-foreground: 0 0% 50%;
+    --sidebar-primary: 10 99% 55%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 120 7% 6%;
+    --sidebar-accent-foreground: 0 0% 93%;
+    --sidebar-border: 120 5% 18%;
+    --sidebar-ring: 10 99% 55%;
+
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 0%;
+  }
+
+  /* ── DARK class (mirrors :root) ── */
+  .dark {
+    --background: 120 7% 6%;
+    --foreground: 0 0% 93%;
+
+    --card: 120 5% 11%;
+    --card-foreground: 0 0% 93%;
+
+    --popover: 120 5% 11%;
+    --popover-foreground: 0 0% 93%;
+
+    --primary: 10 99% 55%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 120 5% 16%;
+    --secondary-foreground: 0 0% 93%;
+
+    --muted: 120 5% 14%;
+    --muted-foreground: 0 0% 50%;
+
+    --accent: 10 99% 55%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 120 5% 18%;
+    --input: 120 5% 18%;
+    --ring: 10 99% 55%;
+
+    --sidebar-background: 120 5% 9%;
+    --sidebar-foreground: 0 0% 50%;
+    --sidebar-primary: 10 99% 55%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 120 7% 6%;
+    --sidebar-accent-foreground: 0 0% 93%;
+    --sidebar-border: 120 5% 18%;
+    --sidebar-ring: 10 99% 55%;
+
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 0%;
+  }
+
+  /* ── LIGHT MODE ── */
+  .light {
+    --background: 0 0% 97%;
+    --foreground: 120 7% 10%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 120 7% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 120 7% 10%;
+
+    /* --primary and --accent are set by theme, kept as-is */
+
+    --secondary: 0 0% 93%;
+    --secondary-foreground: 120 7% 10%;
+
+    --muted: 0 0% 92%;
+    --muted-foreground: 0 0% 45%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 0 0% 87%;
+    --input: 0 0% 87%;
+
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 0 0% 45%;
+    --sidebar-accent: 0 0% 95%;
+    --sidebar-accent-foreground: 120 7% 10%;
+    --sidebar-border: 0 0% 87%;
+
+    --success: 142 71% 38%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 45%;
+    --warning-foreground: 0 0% 0%;
+  }
+}
+
+/* Theme color transition — smooth fade on all color-related properties */
+*, *::before, *::after {
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.15s ease, box-shadow 0.3s ease;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+    box-sizing: border-box;
+  }
+
+  *::-webkit-scrollbar {
+    display: none;
+  }
+
+  html, body, #root {
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Zalando Sans', sans-serif;
+    font-optical-sizing: auto;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    @apply appearance-none bg-transparent border-0 outline-none;
+  }
+}
+
+@layer utilities {
+  .hover-scale {
+    @apply transition-transform duration-200 hover:scale-[1.03] active:scale-[0.98];
+  }
+
+  .story-link * {
+    @apply relative inline-block after:content-[''] after:absolute after:w-full after:scale-x-0 after:h-0.5 after:bottom-0 after:left-0 after:bg-primary after:origin-bottom-right after:transition-transform after:duration-300 hover:after:scale-x-100 hover:after:origin-bottom-left;
+  }
+
+  /* ── Glassmorphism card ── */
+  .glass-card {
+    @apply bg-card/80 backdrop-blur-xl border border-border/50 shadow-xl;
+  }
+
+  /* ── Gradient text ── */
+  .gradient-text {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary via-primary/80 to-primary/60;
+  }
+
+  /* ── Glow button / element ── */
+  .glow-primary {
+    box-shadow: 0 0 20px hsl(var(--primary) / 0.35), 0 0 60px hsl(var(--primary) / 0.1);
+  }
+
+  .glow-primary-sm {
+    box-shadow: 0 0 10px hsl(var(--primary) / 0.25), 0 0 30px hsl(var(--primary) / 0.08);
+  }
+
+  /* ── Animated gradient border ── */
+  .gradient-border {
+    position: relative;
+    border: none;
+  }
+  .gradient-border::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1.5px;
+    background: linear-gradient(135deg, hsl(var(--primary) / 0.6), transparent 60%, hsl(var(--primary) / 0.3));
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+}
+
+/* ── Keyframes ── */
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 20px hsl(var(--primary) / 0.3); }
+  50% { box-shadow: 0 0 40px hsl(var(--primary) / 0.5), 0 0 80px hsl(var(--primary) / 0.15); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-pulse-glow { animation: pulse-glow 3s ease-in-out infinite; }
+.animate-float { animation: float 4s ease-in-out infinite; }
+.animate-shimmer { animation: shimmer 2s linear infinite; background-size: 200% 100%; }
+.animate-fade-in-up { animation: fade-in-up 0.5s ease-out forwards; }

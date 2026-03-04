@@ -1,0 +1,22 @@
+project_id = "cjqpetgzfctagftuomaj"
+
+[functions.search-foods]
+verify_jwt = false
+
+[functions.treinai]
+verify_jwt = false
+
+[functions.dietai]
+verify_jwt = false
+
+[functions.search-user]
+verify_jwt = false
+
+[functions.student-analytics]
+verify_jwt = false
+
+[functions.admin-metrics]
+verify_jwt = false
+
+[functions.group-rankings]
+verify_jwt = false
