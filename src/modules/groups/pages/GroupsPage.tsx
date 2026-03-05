@@ -12,6 +12,8 @@ import {
   GlobalBold,
   ArrowRightBold,
   TrashBinTrashBold,
+  CupStarBold,
+  TargetBold,
 } from "solar-icon-set";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -131,7 +133,7 @@ export default function GroupsPage() {
               </button>
             </DialogTrigger>
             <DialogContent className="max-h-[85vh] overflow-y-auto">
-              <DialogHeader><DialogTitle className="text-lg font-black">🏆 Criar Grupo</DialogTitle></DialogHeader>
+              <DialogHeader><DialogTitle className="text-lg font-black flex items-center gap-2"><CupStarBold size={20} color="currentColor" /> Criar Grupo</DialogTitle></DialogHeader>
               <div className="space-y-4">
                 <Input placeholder="Nome do grupo" value={name} onChange={(e) => setName(e.target.value)} />
                 <Input placeholder="Descrição (opcional)" value={description} onChange={(e) => setDescription(e.target.value)} />
@@ -147,8 +149,8 @@ export default function GroupsPage() {
                   <Select value={groupType} onValueChange={v => setGroupType(v as "club" | "challenge")}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="club">🏠 Clube contínuo</SelectItem>
-                      <SelectItem value="challenge">🏆 Desafio (com datas)</SelectItem>
+                      <SelectItem value="club"><div className="flex items-center gap-2"><UsersGroupTwoRoundedBold size={14} color="currentColor" /> Clube contínuo</div></SelectItem>
+                      <SelectItem value="challenge"><div className="flex items-center gap-2"><CupStarBold size={14} color="currentColor" /> Desafio (com datas)</div></SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -168,7 +170,7 @@ export default function GroupsPage() {
 
                 {/* Scoring */}
                 <div className="rounded-xl bg-primary/5 p-3 space-y-3 border border-primary/20">
-                  <Label className="font-bold text-primary text-sm">🎯 Regras de Pontuação</Label>
+                  <Label className="font-bold text-primary text-sm flex items-center gap-1.5"><TargetBold size={16} color="currentColor" /> Regras de Pontuação</Label>
                   <Select value={scoreType} onValueChange={v => setScoreType(v as ScoreRules["type"])}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>

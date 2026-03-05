@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { type LeaderboardEntry } from "../hooks/useGroupFeed";
 import { Badge } from "@/components/ui/badge";
+import { MedalStarBold, CupStarBold } from "solar-icon-set";
 
 interface LeaderboardTableProps {
     entries: LeaderboardEntry[];
@@ -17,7 +18,7 @@ const FILTER_LABELS: Record<string, string> = {
     total: "Total",
 };
 
-const MEDALS = ["🥇", "🥈", "🥉"];
+const MEDAL_COLORS = ["#FFD700", "#C0C0C0", "#CD7F32"];
 
 export default function LeaderboardTable({ entries, loading, filter, onFilterChange, currentUserId }: LeaderboardTableProps) {
     return (
@@ -28,8 +29,8 @@ export default function LeaderboardTable({ entries, loading, filter, onFilterCha
                     <Badge
                         key={f}
                         className={`cursor-pointer rounded-full px-4 py-1.5 text-xs font-bold transition-colors shrink-0 ${filter === f
-                                ? "bg-primary text-primary-foreground border-primary"
-                                : "bg-muted/50 text-muted-foreground border-transparent hover:bg-muted"
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-muted/50 text-muted-foreground border-transparent hover:bg-muted"
                             }`}
                         onClick={() => onFilterChange(f)}
                     >
@@ -45,7 +46,7 @@ export default function LeaderboardTable({ entries, loading, filter, onFilterCha
                 </div>
             ) : entries.length === 0 ? (
                 <div className="text-center py-10">
-                    <span className="text-3xl">🏆</span>
+                    <span className="text-foreground flex justify-center"><CupStarBold size={40} color="currentColor" /></span>
                     <p className="text-muted-foreground text-sm mt-2">Nenhuma atividade neste período</p>
                 </div>
             ) : (
@@ -65,7 +66,7 @@ export default function LeaderboardTable({ entries, loading, filter, onFilterCha
                             >
                                 {/* Position */}
                                 <div className={`flex items-center justify-center shrink-0 ${isTop3 ? "text-2xl w-10" : "text-sm font-bold w-10 text-muted-foreground"}`}>
-                                    {isTop3 ? MEDALS[idx] : `#${idx + 1}`}
+                                    {isTop3 ? <MedalStarBold size={24} color={MEDAL_COLORS[idx]} /> : `#${idx + 1}`}
                                 </div>
 
                                 {/* Avatar */}

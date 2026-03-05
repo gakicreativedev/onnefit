@@ -14,6 +14,10 @@ import {
   CrownBold,
   TrashBinTrashBold,
   LogoutBold,
+  CameraBold,
+  CupStarBold,
+  TargetBold,
+  CalendarMarkBold,
 } from "solar-icon-set";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -31,10 +35,10 @@ const fadeUp = {
 };
 
 type TabType = "feed" | "leaderboard" | "members";
-const TAB_LABELS: Record<TabType, string> = {
-  feed: "📸 Feed",
-  leaderboard: "🏆 Ranking",
-  members: "👥 Membros",
+const TAB_LABELS: Record<TabType, { label: string, icon: React.ReactNode }> = {
+  feed: { label: "Feed", icon: <CameraBold size={16} color="currentColor" /> },
+  leaderboard: { label: "Ranking", icon: <CupStarBold size={16} color="currentColor" /> },
+  members: { label: "Membros", icon: <UsersGroupTwoRoundedBold size={16} color="currentColor" /> },
 };
 
 export default function GroupDetailPage() {
@@ -137,9 +141,13 @@ export default function GroupDetailPage() {
             <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{gd.group.description}</p>
           )}
           <div className="flex items-center gap-3 mt-1">
-            <span className="text-[11px] text-muted-foreground">👥 {gd.members.length} membros</span>
+            <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+              <UsersGroupTwoRoundedBold size={14} color="currentColor" className="shrink-0" /> {gd.members.length} membros
+            </span>
             {gd.group.group_type === "challenge" && gd.group.end_date && (
-              <span className="text-[11px] text-muted-foreground">📅 até {new Date(gd.group.end_date).toLocaleDateString("pt-BR")}</span>
+              <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+                <CalendarMarkBold size={14} color="currentColor" className="shrink-0" /> até {new Date(gd.group.end_date).toLocaleDateString("pt-BR")}
+              </span>
             )}
           </div>
         </div>
@@ -162,7 +170,7 @@ export default function GroupDetailPage() {
 
       {/* Scoring info */}
       <motion.div variants={fadeUp} className="rounded-xl bg-primary/5 border border-primary/15 px-4 py-2.5 flex items-center gap-2">
-        <span className="text-sm">🎯</span>
+        <TargetBold size={20} className="text-primary shrink-0" color="currentColor" />
         <span className="text-xs text-muted-foreground">
           Pontuação: {" "}
           <span className="text-primary font-bold">
@@ -178,16 +186,17 @@ export default function GroupDetailPage() {
 
       {/* Tabs */}
       <motion.div variants={fadeUp} className="flex gap-1.5">
-        {(Object.entries(TAB_LABELS) as [TabType, string][]).map(([key, label]) => (
+        {(Object.entries(TAB_LABELS) as [TabType, { label: string, icon: React.ReactNode }][]).map(([key, tab]) => (
           <Badge
             key={key}
-            className={`cursor-pointer rounded-full px-4 py-2 text-xs font-bold transition-colors border ${activeTab === key
-                ? "bg-primary text-primary-foreground border-primary"
-                : "bg-muted/50 text-muted-foreground border-transparent hover:bg-muted"
+            className={`cursor-pointer rounded-full px-4 py-2 text-xs font-bold transition-colors border flex items-center gap-1.5 ${activeTab === key
+              ? "bg-primary text-primary-foreground border-primary"
+              : "bg-muted/50 text-muted-foreground border-transparent hover:bg-muted"
               }`}
             onClick={() => setActiveTab(key)}
           >
-            {label}
+            {tab.icon}
+            {tab.label}
           </Badge>
         ))}
       </motion.div>
@@ -203,7 +212,7 @@ export default function GroupDetailPage() {
               </div>
             ) : feed.activities.length === 0 ? (
               <div className="text-center py-16 rounded-2xl bg-card">
-                <span className="text-4xl block mb-3">📸</span>
+                <span className="text-foreground flex justify-center mb-3"><CameraBold size={48} color="currentColor" /></span>
                 <p className="text-muted-foreground font-medium">Nenhuma atividade ainda</p>
                 <p className="text-xs text-muted-foreground mt-1">Registre seu primeiro treino!</p>
               </div>

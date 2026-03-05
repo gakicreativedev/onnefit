@@ -4,7 +4,7 @@ import { type GroupActivity, type ActivityComment } from "../hooks/useGroupFeed"
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { TrashBinTrashBold, ChatRoundLineBold, PlainBold } from "solar-icon-set";
+import { TrashBinTrashBold, ChatRoundLineBold, PlainBold, RunningBold, StopwatchBold, FireBold, WalkingBold, DumbbellBold, HandStarsBold, HeartBold, CupStarBold } from "solar-icon-set";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -112,18 +112,26 @@ export default function ActivityCard({
 
                 {/* Metrics */}
                 {(activity.distance_km || activity.duration_min || activity.calories || activity.steps) && (
-                    <div className="flex gap-3 px-4 pb-2">
+                    <div className="flex flex-wrap gap-3 px-4 pb-2">
                         {activity.distance_km != null && (
-                            <span className="text-[11px] text-muted-foreground">🏃 {activity.distance_km} km</span>
+                            <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+                                <RunningBold size={14} color="currentColor" /> {activity.distance_km} km
+                            </span>
                         )}
                         {activity.duration_min != null && (
-                            <span className="text-[11px] text-muted-foreground">⏱️ {activity.duration_min} min</span>
+                            <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+                                <StopwatchBold size={14} color="currentColor" /> {activity.duration_min} min
+                            </span>
                         )}
                         {activity.calories != null && (
-                            <span className="text-[11px] text-muted-foreground">🔥 {activity.calories} kcal</span>
+                            <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+                                <FireBold size={14} color="currentColor" /> {activity.calories} kcal
+                            </span>
                         )}
                         {activity.steps != null && (
-                            <span className="text-[11px] text-muted-foreground">👟 {activity.steps}</span>
+                            <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+                                <WalkingBold size={14} color="currentColor" /> {activity.steps}
+                            </span>
                         )}
                     </div>
                 )}
@@ -138,11 +146,16 @@ export default function ActivityCard({
                                 key={emoji}
                                 onClick={() => onReaction(activity.id, emoji)}
                                 className={`flex items-center gap-0.5 rounded-full px-2 py-1 text-xs transition-all ${myReacted
-                                        ? "bg-primary/15 text-primary ring-1 ring-primary/30"
-                                        : "bg-muted/50 text-muted-foreground hover:bg-muted"
+                                    ? "bg-primary/15 text-primary ring-1 ring-primary/30"
+                                    : "bg-muted/50 text-muted-foreground hover:bg-muted"
                                     }`}
                             >
-                                <span>{emoji}</span>
+                                {emoji === "🔥" ? <FireBold size={14} color="currentColor" /> :
+                                    emoji === "💪" ? <DumbbellBold size={14} color="currentColor" /> :
+                                        emoji === "👏" ? <HandStarsBold size={14} color="currentColor" /> :
+                                            emoji === "❤️" ? <HeartBold size={14} color="currentColor" /> :
+                                                emoji === "🏆" ? <CupStarBold size={14} color="currentColor" /> :
+                                                    <span>{emoji}</span>}
                                 {count > 0 && <span className="font-bold text-[10px]">{count}</span>}
                             </button>
                         );

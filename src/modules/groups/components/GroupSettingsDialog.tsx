@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { type Group, type GroupMember } from "../hooks/useGroups";
 import { type ScoreRules } from "../hooks/useGroupFeed";
-import { AddCircleBold, TrashBinTrashBold } from "solar-icon-set";
+import { AddCircleBold, TrashBinTrashBold, SettingsBold, UsersGroupTwoRoundedBold, CupStarBold, TargetBold } from "solar-icon-set";
 
 interface Props {
     group: Group;
@@ -77,7 +77,7 @@ export default function GroupSettingsDialog({ group, members, open, onOpenChange
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-h-[85vh] overflow-y-auto">
                 <DialogHeader>
-                    <DialogTitle className="text-lg font-black">⚙️ Configurações do Grupo</DialogTitle>
+                    <DialogTitle className="text-lg font-black flex items-center gap-2"><SettingsBold size={20} color="currentColor" /> Configurações do Grupo</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4">
                     {/* Name & Description */}
@@ -96,14 +96,13 @@ export default function GroupSettingsDialog({ group, members, open, onOpenChange
                         <Switch checked={isPublic} onCheckedChange={setIsPublic} />
                     </div>
 
-                    {/* Group Type */}
                     <div className="space-y-1">
                         <Label className="font-bold">Tipo</Label>
-                        <Select value={groupType} onValueChange={setGroupType}>
+                        <Select value={groupType} onValueChange={v => setGroupType(v as "club" | "challenge")}>
                             <SelectTrigger><SelectValue /></SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="club">🏠 Clube contínuo</SelectItem>
-                                <SelectItem value="challenge">🏆 Desafio (com datas)</SelectItem>
+                                <SelectItem value="club"><div className="flex items-center gap-2"><UsersGroupTwoRoundedBold size={14} color="currentColor" /> Clube contínuo</div></SelectItem>
+                                <SelectItem value="challenge"><div className="flex items-center gap-2"><CupStarBold size={14} color="currentColor" /> Desafio (com datas)</div></SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -136,7 +135,7 @@ export default function GroupSettingsDialog({ group, members, open, onOpenChange
 
                     {/* Scoring */}
                     <div className="rounded-xl bg-primary/5 p-3 space-y-3 border border-primary/20">
-                        <Label className="font-bold text-primary">🎯 Regras de Pontuação</Label>
+                        <Label className="font-bold text-primary flex items-center gap-1.5"><TargetBold size={16} color="currentColor" /> Regras de Pontuação</Label>
                         <Select value={scoreType} onValueChange={v => setScoreType(v as ScoreRules["type"])}>
                             <SelectTrigger><SelectValue /></SelectTrigger>
                             <SelectContent>

@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { type ScoreRules } from "../hooks/useGroupFeed";
+import { CameraBold, GalleryBold, RunningBold, StopwatchBold, FireBold, WalkingBold, CupStarBold } from "solar-icon-set";
 
 interface Props {
     open: boolean;
@@ -88,7 +89,9 @@ export default function SubmitActivityDialog({ open, onOpenChange, scoreRules, o
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-h-[85vh] overflow-y-auto">
                 <DialogHeader>
-                    <DialogTitle className="text-lg font-black">📸 Registrar Atividade</DialogTitle>
+                    <DialogTitle className="text-lg font-black flex items-center gap-2">
+                        <CameraBold size={20} color="currentColor" /> Registrar Atividade
+                    </DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4">
                     {/* Photo - REQUIRED */}
@@ -109,11 +112,11 @@ export default function SubmitActivityDialog({ open, onOpenChange, scoreRules, o
                         ) : (
                             <div className="flex gap-2 w-full">
                                 <button onClick={() => galleryRef.current?.click()} className="flex-1 flex flex-col items-center justify-center gap-2 h-32 rounded-2xl border-2 border-dashed border-primary/30 hover:border-primary/60 transition-colors bg-primary/5">
-                                    <span className="text-3xl">🖼️</span>
+                                    <span className="text-foreground"><GalleryBold size={32} color="currentColor" /></span>
                                     <span className="text-xs text-muted-foreground font-bold">Galeria</span>
                                 </button>
                                 <button onClick={() => cameraRef.current?.click()} className="flex-1 flex flex-col items-center justify-center gap-2 h-32 rounded-2xl border-2 border-dashed border-primary/30 hover:border-primary/60 transition-colors bg-primary/5">
-                                    <span className="text-3xl">📷</span>
+                                    <span className="text-foreground"><CameraBold size={32} color="currentColor" /></span>
                                     <span className="text-xs text-muted-foreground font-bold">Câmera</span>
                                 </button>
                             </div>
@@ -165,8 +168,8 @@ export default function SubmitActivityDialog({ open, onOpenChange, scoreRules, o
                         <Label className="text-muted-foreground text-xs">Métricas {!needsDistance && !needsDuration && !needsCalories && !needsSteps ? "(opcionais)" : ""}</Label>
                         <div className="grid grid-cols-2 gap-2">
                             <div className="space-y-1">
-                                <Label className={`text-xs ${needsDistance ? "text-primary font-bold" : "text-muted-foreground"}`}>
-                                    🏃 Distância (km) {needsDistance && "*"}
+                                <Label className={`text-xs flex items-center gap-1 ${needsDistance ? "text-primary font-bold" : "text-muted-foreground"}`}>
+                                    <RunningBold size={14} color="currentColor" /> Distância (km) {needsDistance && "*"}
                                 </Label>
                                 <Input
                                     type="number"
@@ -178,8 +181,8 @@ export default function SubmitActivityDialog({ open, onOpenChange, scoreRules, o
                                 />
                             </div>
                             <div className="space-y-1">
-                                <Label className={`text-xs ${needsDuration ? "text-primary font-bold" : "text-muted-foreground"}`}>
-                                    ⏱️ Duração (min) {needsDuration && "*"}
+                                <Label className={`text-xs flex items-center gap-1 ${needsDuration ? "text-primary font-bold" : "text-muted-foreground"}`}>
+                                    <StopwatchBold size={14} color="currentColor" /> Duração (min) {needsDuration && "*"}
                                 </Label>
                                 <Input
                                     type="number"
@@ -190,8 +193,8 @@ export default function SubmitActivityDialog({ open, onOpenChange, scoreRules, o
                                 />
                             </div>
                             <div className="space-y-1">
-                                <Label className={`text-xs ${needsCalories ? "text-primary font-bold" : "text-muted-foreground"}`}>
-                                    🔥 Calorias {needsCalories && "*"}
+                                <Label className={`text-xs flex items-center gap-1 ${needsCalories ? "text-primary font-bold" : "text-muted-foreground"}`}>
+                                    <FireBold size={14} color="currentColor" /> Calorias {needsCalories && "*"}
                                 </Label>
                                 <Input
                                     type="number"
@@ -202,8 +205,8 @@ export default function SubmitActivityDialog({ open, onOpenChange, scoreRules, o
                                 />
                             </div>
                             <div className="space-y-1">
-                                <Label className={`text-xs ${needsSteps ? "text-primary font-bold" : "text-muted-foreground"}`}>
-                                    👟 Passos {needsSteps && "*"}
+                                <Label className={`text-xs flex items-center gap-1 ${needsSteps ? "text-primary font-bold" : "text-muted-foreground"}`}>
+                                    <WalkingBold size={14} color="currentColor" /> Passos {needsSteps && "*"}
                                 </Label>
                                 <Input
                                     type="number"
@@ -217,7 +220,7 @@ export default function SubmitActivityDialog({ open, onOpenChange, scoreRules, o
                     </div>
 
                     <Button onClick={handleSubmit} disabled={submitting || !title.trim() || !photoFile} className="w-full rounded-xl py-5 font-black text-base">
-                        {submitting ? "Enviando..." : "🏆 Registrar Atividade"}
+                        <CupStarBold size={20} color="currentColor" className="mr-2 inline" /> Registrar Atividade
                     </Button>
                 </div>
             </DialogContent>
