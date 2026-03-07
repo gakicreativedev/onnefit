@@ -94,35 +94,42 @@ export function useGroupFeed(groupId: string | undefined) {
         const userIds = [...new Set(raw.map(a => a.user_id))];
 
         const [profilesRes, reactionsRes, myReactionsRes, commentsCountRes] = await Promise.all([
-            supabase.from("profiles").select("user_id, name, username, avatar_url").in("user_id", userIds),
-            supabase.from("activity_reactions").select("activity_id, emoji, user_id").in("activity_id", activityIds),
-            supabase.from("activity_reactions").select("activity_id, emoji").eq("user_id", user.id).in("activity_id", activityIds),
-            supabase.from("activity_comments").select("activity_id").in("activity_id", activityIds),
+            // @ts-ignore
+            (supabase as any).from("profiles").select("user_id, name, username, avatar_url").in("user_id", userIds),
+            // @ts-ignore
+            (supabase as any).from("activity_reactions").select("activity_id, emoji, user_id").in("activity_id", activityIds),
+            // @ts-ignore
+            (supabase as any).from("activity_reactions").select("activity_id, emoji").eq("user_id", user.id).in("activity_id", activityIds),
+            // @ts-ignore
+            (supabase as any).from("activity_comments").select("activity_id").in("activity_id", activityIds),
         ]);
 
-        const profileMap = new Map((profilesRes.data || []).map(p => [p.user_id, p]));
+        const profileMap = new Map((profilesRes.data || []).map((p: any) => [p.user_id, p]));
 
         // Get names for reactors
-        const reactorIds = [...new Set((reactionsRes.data || []).map(r => r.user_id))];
+        const reactorIds = [...new Set((reactionsRes.data || []).map((r: any) => r.user_id))];
+        // @ts-ignore
         const { data: reactorProfiles } = reactorIds.length > 0
-            ? await supabase.from("profiles").select("user_id, name").in("user_id", reactorIds)
+            // @ts-ignore
+            ? await (supabase as any).from("profiles").select("user_id, name").in("user_id", reactorIds)
             : { data: [] };
-        const reactorNameMap = new Map((reactorProfiles || []).map(p => [p.user_id, p.name || "Usuário"]));
+        const reactorNameMap = new Map((reactorProfiles || []).map((p: any) => [p.user_id, p.name || "Usuário"]));
 
         // Build reactions map per activity
         const reactionsMap = new Map<string, Record<string, string[]>>();
-        (reactionsRes.data || []).forEach(r => {
+        (reactionsRes.data || []).forEach((r: any) => {
             const key = r.activity_id;
             if (!reactionsMap.has(key)) reactionsMap.set(key, {});
             const map = reactionsMap.get(key)!;
-            if (!map[r.emoji]) map[r.emoji] = [];
-            const name = reactorNameMap.get(r.user_id) || "Usuário";
-            if (!map[r.emoji].includes(name)) map[r.emoji].push(name);
+            const emojiStr = r.emoji as string;
+            if (!map[emojiStr]) map[emojiStr] = [];
+            const name: string = (reactorNameMap.get(r.user_id) || "Usuário") as string;
+            if (!map[emojiStr].includes(name)) map[emojiStr].push(name);
         });
 
         // My reactions per activity
         const myReactionsMap = new Map<string, string[]>();
-        (myReactionsRes.data || []).forEach(r => {
+        (myReactionsRes.data || []).forEach((r: any) => {
             const arr = myReactionsMap.get(r.activity_id) || [];
             arr.push(r.emoji);
             myReactionsMap.set(r.activity_id, arr);
@@ -130,12 +137,12 @@ export function useGroupFeed(groupId: string | undefined) {
 
         // Comments count per activity
         const commentsCountMap = new Map<string, number>();
-        (commentsCountRes.data || []).forEach(c => {
+        (commentsCountRes.data || []).forEach((c: any) => {
             commentsCountMap.set(c.activity_id, (commentsCountMap.get(c.activity_id) || 0) + 1);
         });
 
-        return raw.map(a => {
-            const profile = profileMap.get(a.user_id);
+        return raw.map((a: any) => {
+            const profile: any = profileMap.get(a.user_id);
             return {
                 ...a,
                 author: {
@@ -157,7 +164,8 @@ export function useGroupFeed(groupId: string | undefined) {
         setPage(0);
         setHasMore(true);
 
-        const { data: raw } = await supabase
+        // @ts-ignore
+        const { data: raw } = await (supabase as any)
             .from("group_activities")
             .select("*")
             .eq("group_id", groupId)
@@ -185,7 +193,8 @@ export function useGroupFeed(groupId: string | undefined) {
         const from = nextPage * PAGE_SIZE;
         const to = from + PAGE_SIZE - 1;
 
-        const { data: raw } = await supabase
+        // @ts-ignore
+        const { data: raw } = await (supabase as any)
             .from("group_activities")
             .select("*")
             .eq("group_id", groupId)
@@ -239,7 +248,8 @@ export function useGroupFeed(groupId: string | undefined) {
             custom_rule_label: data.custom_rule_label,
         });
 
-        const { error } = await supabase.from("group_activities").insert({
+        // @ts-ignore
+        const { error, data: inserted } = await (supabase as any).from("group_activities").insert({
             group_id: groupId,
             user_id: user.id,
             title: data.title,
@@ -251,9 +261,27 @@ export function useGroupFeed(groupId: string | undefined) {
             steps: data.steps || null,
             custom_rule_label: data.custom_rule_label || null,
             points_awarded: points,
-        });
+        }).select().single();
 
         if (error) { toast.error("Erro ao registrar atividade"); return; }
+
+        // Notify other group members
+        const { data: members } = await supabase.from("group_members").select("user_id").eq("group_id", groupId);
+        if (members && members.length > 0) {
+            const notifs = members
+                .filter(m => m.user_id !== user.id)
+                .map(m => ({
+                    user_id: m.user_id,
+                    actor_id: user.id,
+                    type: "group_activity",
+                    post_id: null,
+                    content: data.title
+                }));
+            if (notifs.length > 0) {
+                await supabase.from("notifications").insert(notifs);
+            }
+        }
+
         toast.success(`+${points.toFixed(1)} pts! Atividade registrada 🎉`);
         fetchActivities();
     };
@@ -267,12 +295,14 @@ export function useGroupFeed(groupId: string | undefined) {
         const hasReacted = activity.my_reactions.includes(emoji);
 
         if (hasReacted) {
-            await supabase.from("activity_reactions").delete()
+            // @ts-ignore
+            await (supabase as any).from("activity_reactions").delete()
                 .eq("activity_id", activityId)
                 .eq("user_id", user.id)
                 .eq("emoji", emoji);
         } else {
-            await supabase.from("activity_reactions").insert({
+            // @ts-ignore
+            await (supabase as any).from("activity_reactions").insert({
                 activity_id: activityId,
                 user_id: user.id,
                 emoji,
@@ -301,7 +331,8 @@ export function useGroupFeed(groupId: string | undefined) {
 
     // ── Comments ──
     const fetchComments = async (activityId: string): Promise<ActivityComment[]> => {
-        const { data: raw } = await supabase
+        // @ts-ignore
+        const { data: raw } = await (supabase as any)
             .from("activity_comments")
             .select("*")
             .eq("activity_id", activityId)
@@ -309,11 +340,12 @@ export function useGroupFeed(groupId: string | undefined) {
 
         if (!raw || raw.length === 0) return [];
 
-        const userIds = [...new Set(raw.map(c => c.user_id))];
-        const { data: profiles } = await supabase.from("profiles").select("user_id, name, username, avatar_url").in("user_id", userIds);
-        const profileMap = new Map((profiles || []).map(p => [p.user_id, p]));
+        const userIds = [...new Set(raw.map((c: any) => c.user_id))];
+        // @ts-ignore
+        const { data: profiles } = await (supabase as any).from("profiles").select("user_id, name, username, avatar_url").in("user_id", userIds);
+        const profileMap = new Map<string, any>((profiles || []).map((p: any) => [p.user_id, p]));
 
-        return raw.map(c => {
+        return raw.map((c: any) => {
             const profile = profileMap.get(c.user_id);
             return {
                 ...c,
@@ -322,13 +354,14 @@ export function useGroupFeed(groupId: string | undefined) {
                     username: profile?.username || null,
                     avatar_url: profile?.avatar_url || null,
                 },
-            };
+            } as ActivityComment;
         });
     };
 
     const addComment = async (activityId: string, content: string) => {
         if (!user) return;
-        const { error } = await supabase.from("activity_comments").insert({
+        // @ts-ignore
+        const { error } = await (supabase as any).from("activity_comments").insert({
             activity_id: activityId,
             user_id: user.id,
             content,
@@ -343,7 +376,8 @@ export function useGroupFeed(groupId: string | undefined) {
 
     const deleteComment = async (commentId: string, activityId: string) => {
         if (!user) return;
-        await supabase.from("activity_comments").delete().eq("id", commentId).eq("user_id", user.id);
+        // @ts-ignore
+        await (supabase as any).from("activity_comments").delete().eq("id", commentId).eq("user_id", user.id);
         setActivities(prev => prev.map(a =>
             a.id === activityId ? { ...a, comments_count: Math.max(0, a.comments_count - 1) } : a
         ));
@@ -352,7 +386,8 @@ export function useGroupFeed(groupId: string | undefined) {
     // ── Delete Activity ──
     const deleteActivity = async (activityId: string) => {
         if (!user) return;
-        await supabase.from("group_activities").delete().eq("id", activityId).eq("user_id", user.id);
+        // @ts-ignore
+        await (supabase as any).from("group_activities").delete().eq("id", activityId).eq("user_id", user.id);
         setActivities(prev => prev.filter(a => a.id !== activityId));
         toast.success("Atividade removida");
     };
@@ -412,7 +447,8 @@ export function useLeaderboard(groupId: string | undefined) {
         }
         // total = null (no filter)
 
-        let query = supabase
+        // @ts-ignore
+        let query = (supabase as any)
             .from("group_activities")
             .select("user_id, points_awarded")
             .eq("group_id", groupId);
@@ -439,12 +475,13 @@ export function useLeaderboard(groupId: string | undefined) {
         });
 
         const userIds = [...userMap.keys()];
-        const { data: profiles } = await supabase
+        // @ts-ignore
+        const { data: profiles } = await (supabase as any)
             .from("profiles")
             .select("user_id, name, username, avatar_url")
             .in("user_id", userIds);
 
-        const profileMap = new Map((profiles || []).map(p => [p.user_id, p]));
+        const profileMap = new Map((profiles || []).map((p: any) => [p.user_id, p]));
 
         const sorted: LeaderboardEntry[] = userIds
             .map(uid => {

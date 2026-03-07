@@ -106,7 +106,7 @@ export function useNotifications() {
 }
 
 // Helper to send a notification (called from like/comment actions)
-export async function sendNotification(actorId: string, targetUserId: string, type: "like" | "comment", postId: string, content?: string) {
+export async function sendNotification(actorId: string, targetUserId: string, type: "like" | "comment" | "follow_request" | "follow_accepted" | "story_reaction" | "story_reply" | "group_invite" | "challenge_winner" | "group_activity", postId: string | null, content?: string) {
   // Don't notify yourself
   if (actorId === targetUserId) return;
 

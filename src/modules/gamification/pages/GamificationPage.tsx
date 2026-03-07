@@ -13,7 +13,10 @@ import {
   ChefHatBold,
   WaterdropsBold,
   CrownBold,
+  MedalRibbonBold,
 } from "solar-icon-set";
+import { supabase } from "@/integrations/supabase/client";
+import { useState, useEffect } from "react";
 
 /* ── Badge definitions ── */
 interface Badge {
@@ -132,8 +135,21 @@ export default function GamificationPage() {
   const { user } = useAuth();
   const { totalXP, level, history, loading } = useXP(user?.id);
   const { streak, loading: streakLoading } = useStreak(user?.id);
+  const [dbBadges, setDbBadges] = useState<any[]>([]);
+  const [loadingBadges, setLoadingBadges] = useState(true);
 
-  if (loading || streakLoading) {
+  useEffect(() => {
+    async function fetchDbBadges() {
+      if (!user) return;
+      // @ts-ignore
+      const { data } = await (supabase as any).from("user_badges").select("*").eq("user_id", user.id).order("awarded_at", { ascending: false });
+      if (data) setDbBadges(data);
+      setLoadingBadges(false);
+    }
+    fetchDbBadges();
+  }, [user]);
+
+  if (loading || streakLoading || loadingBadges) {
     return (
       <div className="flex min-h-[400px] items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
@@ -243,6 +259,26 @@ export default function GamificationPage() {
                 </motion.div>
               );
             })}
+          </div>
+        )}
+
+        {/* Unlocked DB Badges (Challenges etc) */}
+        {dbBadges.length > 0 && (
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3 mb-6">
+            {dbBadges.map((badge) => (
+              <motion.div
+                key={badge.id}
+                whileHover={{ scale: 1.06 }}
+                className="flex flex-col items-center gap-2 rounded-2xl bg-amber-500/10 border border-amber-500/30 p-4 text-center"
+              >
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-amber-500/10 text-2xl">
+                  {badge.badge_icon || "🏅"}
+                </div>
+                <span className="text-xs font-bold text-card-foreground leading-tight">
+                  {badge.badge_name}
+                </span>
+              </motion.div>
+            ))}
           </div>
         )}
 

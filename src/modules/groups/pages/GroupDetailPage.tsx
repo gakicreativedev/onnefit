@@ -18,6 +18,7 @@ import {
   CupStarBold,
   TargetBold,
   CalendarMarkBold,
+  MedalRibbonBold,
 } from "solar-icon-set";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -28,17 +29,22 @@ import ActivityCard from "../components/ActivityCard";
 import LeaderboardTable from "../components/LeaderboardTable";
 import SubmitActivityDialog from "../components/SubmitActivityDialog";
 import GroupSettingsDialog from "../components/GroupSettingsDialog";
+import GroupChatTab from "../components/GroupChatTab";
+import GroupGoalsWidget from "../components/GroupGoalsWidget";
+import GroupResourcesTab from "../components/GroupResourcesTab";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
   show: { opacity: 1, y: 0, transition: { duration: 0.45, ease: "easeOut" as const } },
 };
 
-type TabType = "feed" | "leaderboard" | "members";
+type TabType = "feed" | "chat" | "leaderboard" | "members" | "resources";
 const TAB_LABELS: Record<TabType, { label: string, icon: React.ReactNode }> = {
   feed: { label: "Feed", icon: <CameraBold size={16} color="currentColor" /> },
+  chat: { label: "Chat", icon: <AddCircleBold size={16} color="currentColor" /> }, // Use a proper icon here if preferred
   leaderboard: { label: "Ranking", icon: <CupStarBold size={16} color="currentColor" /> },
   members: { label: "Membros", icon: <UsersGroupTwoRoundedBold size={16} color="currentColor" /> },
+  resources: { label: "Mural", icon: <LinkRoundBold size={16} color="currentColor" /> },
 };
 
 export default function GroupDetailPage() {
@@ -154,6 +160,18 @@ export default function GroupDetailPage() {
 
         {/* Action buttons */}
         <div className="flex gap-1.5 shrink-0">
+          {isAdmin && gd.group?.group_type === "challenge" && !gd.challengeClosed && (
+            <Button
+              size="sm"
+              variant="default"
+              className="bg-amber-500 hover:bg-amber-600 text-white rounded-full h-8 px-3 py-1 font-bold text-[11px]"
+              onClick={() => gd.closeChallenge(lb.entries)}
+            >
+              <MedalRibbonBold size={14} color="currentColor" className="mr-1" />
+              Encerrar Desafio
+            </Button>
+          )}
+
           <button onClick={handleCopyCode} className="h-8 w-8 rounded-full bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors" title="Copiar código">
             <TicketBold size={14} color="currentColor" className="text-foreground" />
           </button>
@@ -184,8 +202,18 @@ export default function GroupDetailPage() {
         </span>
       </motion.div>
 
+      {/* Goal Progress Bar Widget */}
+      <motion.div variants={fadeUp}>
+        <GroupGoalsWidget
+          goals={gd.goals || []}
+          isAdmin={isAdmin}
+          onCreateGoal={gd.createGoal}
+          onDeleteGoal={gd.deleteGoal}
+        />
+      </motion.div>
+
       {/* Tabs */}
-      <motion.div variants={fadeUp} className="flex gap-1.5">
+      <motion.div variants={fadeUp} className="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar">
         {(Object.entries(TAB_LABELS) as [TabType, { label: string, icon: React.ReactNode }][]).map(([key, tab]) => (
           <Badge
             key={key}
@@ -240,6 +268,11 @@ export default function GroupDetailPage() {
               </>
             )}
           </div>
+        )}
+
+        {/* ─── Chat ─── */}
+        {activeTab === "chat" && (
+          <GroupChatTab groupId={groupId || ""} />
         )}
 
         {/* ─── Leaderboard ─── */}
@@ -304,6 +337,16 @@ export default function GroupDetailPage() {
               )}
             </div>
           </div>
+        )}
+
+        {/* ─── Resources (Mural) ─── */}
+        {activeTab === "resources" && (
+          <GroupResourcesTab
+            resources={gd.resources || []}
+            isAdmin={isAdmin}
+            onCreateResource={gd.createResource}
+            onDeleteResource={gd.deleteResource}
+          />
         )}
       </motion.div>
 

@@ -53,6 +53,28 @@ export interface GroupRanking {
   profile?: { name: string | null; username: string | null; avatar_url: string | null };
 }
 
+export interface GroupGoal {
+  id: string;
+  group_id: string;
+  title: string;
+  target_value: number;
+  metric_type: string;
+  deadline: string | null;
+  created_at: string;
+  created_by: string;
+  current_value?: number; // Calculated on client
+}
+
+export interface GroupResource {
+  id: string;
+  group_id: string;
+  title: string;
+  url: string | null;
+  description: string | null;
+  created_at: string;
+  created_by: string;
+}
+
 export function useGroups() {
   const { user } = useAuth();
   const [myGroups, setMyGroups] = useState<Group[]>([]);
@@ -189,6 +211,18 @@ export function useGroups() {
       invited_by: user.id,
     });
     if (error) { toast.error(error.message.includes("duplicate") ? "Já convidado" : "Erro ao convidar"); return; }
+
+    const { data: g } = await supabase.from("groups").select("name").eq("id", groupId).single();
+    if (g) {
+      await supabase.from("notifications").insert({
+        user_id: profile.user_id,
+        actor_id: user.id,
+        type: "group_invite",
+        post_id: null,
+        content: g.name,
+      });
+    }
+
     toast.success(`@${username.replace("@", "")} convidado!`);
   };
 
@@ -218,8 +252,11 @@ export function useGroupDetail(groupId: string | undefined) {
   const [group, setGroup] = useState<Group | null>(null);
   const [members, setMembers] = useState<GroupMember[]>([]);
   const [rankings, setRankings] = useState<GroupRanking[]>([]);
+  const [goals, setGoals] = useState<GroupGoal[]>([]);
+  const [resources, setResources] = useState<GroupResource[]>([]);
   const [periodType, setPeriodType] = useState<"weekly" | "monthly" | "annual">("weekly");
   const [loading, setLoading] = useState(true);
+  const [challengeClosed, setChallengeClosed] = useState(false);
 
   const fetchDetail = useCallback(async () => {
     if (!groupId || !user) return;
@@ -236,6 +273,34 @@ export function useGroupDetail(groupId: string | undefined) {
       const profileMap = new Map((profiles || []).map((p: any) => [p.user_id, p]));
       setMembers(mems.map((m: any) => ({ ...m, profile: profileMap.get(m.user_id) })));
     }
+
+    // Fetch goals and resources
+    // @ts-ignore
+    const { data: goalsData } = await (supabase as any).from("group_goals").select("*").eq("group_id", groupId);
+    // @ts-ignore
+    const { data: resourcesData } = await (supabase as any).from("group_resources").select("*").eq("group_id", groupId);
+
+    // Fetch activities to calc goal progress
+    let activities: any[] = [];
+    if (goalsData?.length) {
+      // @ts-ignore
+      const { data: acts } = await (supabase as any).from("group_activities").select("distance_km, duration_min, calories, steps").eq("group_id", groupId);
+      activities = acts || [];
+    }
+
+    const calculatedGoals = (goalsData || []).map((g: any) => {
+      let sum = 0;
+      activities.forEach(a => {
+        if (g.metric_type === "distance_km") sum += (a.distance_km || 0);
+        else if (g.metric_type === "duration_min") sum += (a.duration_min || 0);
+        else if (g.metric_type === "calories") sum += (a.calories || 0);
+        else if (g.metric_type === "steps") sum += (a.steps || 0);
+      });
+      return { ...g, current_value: sum };
+    });
+
+    setGoals(calculatedGoals);
+    setResources(resourcesData || []);
 
     setLoading(false);
   }, [groupId, user]);
@@ -263,6 +328,65 @@ export function useGroupDetail(groupId: string | undefined) {
   useEffect(() => { fetchDetail(); }, [fetchDetail]);
   useEffect(() => { fetchRankings(); }, [fetchRankings]);
 
+  const checkChallengeClosed = useCallback(async () => {
+    if (!groupId) return;
+    // @ts-ignore
+    const { count } = await (supabase as any)
+      .from("user_badges")
+      .select("*", { count: 'exact', head: true })
+      .contains("metadata", { group_id: groupId });
+    setChallengeClosed((count || 0) > 0);
+  }, [groupId]);
+
+  useEffect(() => { checkChallengeClosed(); }, [checkChallengeClosed]);
+
+  const closeChallenge = async (topUsers: { user_id: string; total_points: number }[]) => {
+    if (!groupId || !group) return;
+    const top3 = topUsers.slice(0, 3);
+    if (top3.length === 0) {
+      toast.error("Nenhum participante com pontos no placar.");
+      return;
+    }
+
+    const badgesToInsert = top3.map((u, index) => {
+      let badgeName = "";
+      let emoji = "";
+      if (index === 0) { badgeName = `Campeão: ${group.name}`; emoji = "🏆"; }
+      else if (index === 1) { badgeName = `2º Lugar: ${group.name}`; emoji = "🥈"; }
+      else { badgeName = `3º Lugar: ${group.name}`; emoji = "🥉"; }
+
+      return {
+        user_id: u.user_id,
+        badge_type: "challenge_winner",
+        badge_name: badgeName,
+        badge_icon: emoji,
+        metadata: { group_id: groupId, points: u.total_points, rank: index + 1 }
+      };
+    });
+
+    // @ts-ignore
+    const { error } = await (supabase as any).from("user_badges").insert(badgesToInsert);
+    if (error) {
+      toast.error("Erro ao encerrar desafio: " + error.message);
+      return;
+    }
+
+    const notifs = top3.map(u => ({
+      user_id: u.user_id,
+      actor_id: user?.id || group.created_by,
+      type: "challenge_winner",
+      post_id: null,
+      content: group.name,
+    }));
+    if (notifs.length > 0) {
+      await supabase.from("notifications").insert(notifs);
+    }
+
+    toast.success("Desafio encerrado! Prêmios distribuídos aos 3 melhores.");
+    setChallengeClosed(true);
+  };
+
+
   const calculateRankings = async () => {
     if (!groupId) return;
     toast.info("Calculando rankings...");
@@ -271,5 +395,33 @@ export function useGroupDetail(groupId: string | undefined) {
     fetchRankings();
   };
 
-  return { group, members, rankings, periodType, setPeriodType, loading, calculateRankings, refetch: fetchDetail };
+  const createGoal = async (goalData: Partial<GroupGoal>) => {
+    // @ts-ignore
+    const { error } = await (supabase as any).from("group_goals").insert({ ...goalData, group_id: groupId, created_by: user?.id });
+    if (error) throw error;
+    fetchDetail();
+  };
+
+  const deleteGoal = async (id: string) => {
+    // @ts-ignore
+    const { error } = await (supabase as any).from("group_goals").delete().eq("id", id);
+    if (error) throw error;
+    fetchDetail();
+  };
+
+  const createResource = async (resData: Partial<GroupResource>) => {
+    // @ts-ignore
+    const { error } = await (supabase as any).from("group_resources").insert({ ...resData, group_id: groupId, created_by: user?.id });
+    if (error) throw error;
+    fetchDetail();
+  };
+
+  const deleteResource = async (id: string) => {
+    // @ts-ignore
+    const { error } = await (supabase as any).from("group_resources").delete().eq("id", id);
+    if (error) throw error;
+    fetchDetail();
+  };
+
+  return { group, members, rankings, goals, resources, periodType, setPeriodType, loading, calculateRankings, refetch: fetchDetail, challengeClosed, closeChallenge, createGoal, deleteGoal, createResource, deleteResource };
 }

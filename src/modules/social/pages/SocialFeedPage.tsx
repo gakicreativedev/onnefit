@@ -17,8 +17,8 @@ import { DiscoverDialog } from "../components/DiscoverDialog";
 import { CommentsDrawer } from "../components/CommentsDrawer";
 import { NotificationsDrawer } from "../components/NotificationsDrawer";
 import { FeedSearchBar } from "../components/FeedSearchBar";
-import { ChatDrawer } from "../components/ChatDrawer";
 import { AddCircleBold, UserPlusBold, BellBold, RefreshBold, PlainBold, WomenBold, ConfettiBold, BookmarkBold } from "solar-icon-set";
+import { useNavigate } from "react-router-dom";
 
 export default function SocialFeedPage() {
   const { user } = useAuth();
@@ -33,8 +33,6 @@ export default function SocialFeedPage() {
   const [womenOnlyPostOpen, setWomenOnlyPostOpen] = useState(false);
   const [discoverOpen, setDiscoverOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
-  const [chatOpen, setChatOpen] = useState(false);
-  const [chatInitialUser, setChatInitialUser] = useState<{ id: string; name: string } | null>(null);
   const [commentPostId, setCommentPostId] = useState<string | null>(null);
   const [viewingStory, setViewingStory] = useState<StoryGroup | null>(null);
   const [detailPost, setDetailPost] = useState<FeedPost | null>(null);
@@ -42,6 +40,7 @@ export default function SocialFeedPage() {
   const womenStoryInputRef = useRef<HTMLInputElement>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const [feedMode, setFeedMode] = useState<"feed" | "salvos">("feed");
+  const navigate = useNavigate();
 
   // Infinite scroll via IntersectionObserver
   useEffect(() => {
@@ -82,11 +81,6 @@ export default function SocialFeedPage() {
   const handleFollow = async (userId: string) => {
     await toggleFollow(userId);
     setTimeout(() => refetch(), 300);
-  };
-
-  const handleOpenDM = (userId: string, name: string) => {
-    setChatInitialUser({ id: userId, name });
-    setChatOpen(true);
   };
 
   return (
@@ -135,7 +129,7 @@ export default function SocialFeedPage() {
           </motion.button>
           {/* DM button */}
           <motion.button
-            onClick={() => { setChatInitialUser(null); setChatOpen(true); }}
+            onClick={() => navigate("/inbox")}
             whileTap={{ scale: 0.9 }}
             className="relative flex items-center justify-center h-9 w-9 rounded-full bg-card border border-border/50 text-foreground hover:bg-muted/50 transition-colors"
           >
@@ -344,13 +338,7 @@ export default function SocialFeedPage() {
         onCommentCountChange={updateCommentCount}
       />
       <NotificationsDrawer open={notificationsOpen} onOpenChange={setNotificationsOpen} />
-      <StoryViewer group={viewingStory} onClose={() => setViewingStory(null)} onOpenDM={handleOpenDM} />
-      <ChatDrawer
-        open={chatOpen}
-        onOpenChange={setChatOpen}
-        initialUserId={chatInitialUser?.id}
-        initialUserName={chatInitialUser?.name}
-      />
+      <StoryViewer group={viewingStory} onClose={() => setViewingStory(null)} />
       <input ref={storyInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleStoryFile(e)} />
       <input type="file" accept="image/*" capture="environment" className="hidden" ref={(el) => { if (el) el.dataset.storyCamera = "true"; }} onChange={(e) => handleStoryFile(e)} />
       {isFemale && <input ref={womenStoryInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleStoryFile(e, true)} />}

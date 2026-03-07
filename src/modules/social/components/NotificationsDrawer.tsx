@@ -2,7 +2,7 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/u
 import { useNotifications } from "../hooks/useNotifications";
 import { useFollows } from "../hooks/useFollows";
 import { Button } from "@/components/ui/button";
-import { HeartBold, ChatRoundBold, UserPlusBold, CheckCircleBold, CloseCircleBold, FireBold, DangerCircleBold } from "solar-icon-set";
+import { HeartBold, ChatRoundBold, UserPlusBold, CheckCircleBold, CloseCircleBold, FireBold, DangerCircleBold, UsersGroupTwoRoundedBold, MedalRibbonBold, DumbbellBold } from "solar-icon-set";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -18,6 +18,9 @@ const NOTIFICATION_CONFIG: Record<string, { label: string; icon: any; color: str
   follow_accepted: { label: "aceitou seu pedido de seguir", icon: CheckCircleBold, color: "text-primary" },
   story_reaction: { label: "reagiu ao seu story", icon: FireBold, color: "text-destructive" },
   story_reply: { label: "respondeu ao seu story", icon: ChatRoundBold, color: "text-primary" },
+  group_invite: { label: "convidou você para um grupo", icon: UsersGroupTwoRoundedBold, color: "text-primary" },
+  challenge_winner: { label: "terminou o desafio em destaque", icon: MedalRibbonBold, color: "text-amber-500" },
+  group_activity: { label: "publicou no grupo", icon: DumbbellBold, color: "text-primary" },
 };
 
 export function NotificationsDrawer({ open, onOpenChange }: NotificationsDrawerProps) {
@@ -117,9 +120,8 @@ export function NotificationsDrawer({ open, onOpenChange }: NotificationsDrawerP
                   <button
                     key={notif.id}
                     onClick={() => markOneRead(notif.id)}
-                    className={`flex items-start gap-3 rounded-xl px-3 py-3 text-left transition-colors w-full ${
-                      notif.read ? "bg-transparent" : "bg-primary/5"
-                    } hover:bg-muted/50`}
+                    className={`flex items-start gap-3 rounded-xl px-3 py-3 text-left transition-colors w-full ${notif.read ? "bg-transparent" : "bg-primary/5"
+                      } hover:bg-muted/50`}
                   >
                     <div className="h-10 w-10 rounded-full overflow-hidden bg-muted flex-shrink-0 flex items-center justify-center">
                       {notif.actor.avatar_url ? (

@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/modules/auth/hooks/useAuth";
-import { sendNotification } from "./useNotifications";
 
 export interface FeedPost {
   id: string;
@@ -22,46 +21,30 @@ export interface FeedPost {
   is_liked: boolean;
   is_bookmarked: boolean;
   recent_likers: string[];
-  // Algorithm score (internal)
   _score?: number;
+  group?: {
+    id: string;
+    name: string;
+  };
+  type?: "post" | "group_activity";
 }
 
-/**
- * Feed ranking algorithm
- * Factors: recency, engagement (likes + comments), follow relationship, has image
- */
 function rankPosts(posts: FeedPost[], followingIds: Set<string>, userId: string): FeedPost[] {
   const now = Date.now();
 
   const scored = posts.map(post => {
     const ageHours = (now - new Date(post.created_at).getTime()) / (1000 * 60 * 60);
-
-    // Recency score: exponential decay, half-life ~12h
     const recencyScore = Math.exp(-0.058 * ageHours) * 40;
-
-    // Engagement score: weighted combination
-    const engagementScore = Math.min(
-      (post.likes_count * 2 + post.comments_count * 3) * 1.5,
-      30
-    );
-
-    // Relationship: boost posts from followed users
+    const engagementScore = Math.min((post.likes_count * 2 + post.comments_count * 3) * 1.5, 30);
     const relationshipScore = followingIds.has(post.user_id) ? 15 : 0;
-
-    // Own posts get a mild boost to stay visible
     const ownPostScore = post.user_id === userId ? 10 : 0;
-
-    // Content richness: image posts get a small boost
     const contentScore = post.image_url ? 5 : 0;
 
     const totalScore = recencyScore + engagementScore + relationshipScore + ownPostScore + contentScore;
-
     return { ...post, _score: totalScore };
   });
 
-  // Sort by score descending
   scored.sort((a, b) => (b._score || 0) - (a._score || 0));
-
   return scored;
 }
 
@@ -133,6 +116,8 @@ export function useFeed() {
         is_liked: userLikedSet.has(post.id),
         is_bookmarked: userBookmarkSet.has(post.id),
         recent_likers: likersByPost.get(post.id) || [],
+        group: post.group || undefined,
+        type: post.type || "post",
       };
     });
   }, []);
@@ -152,32 +137,67 @@ export function useFeed() {
     const followSet = new Set(followingIds);
     setFollowingIdsSet(followSet);
 
+    const { data: userGroups } = await supabase
+      .from("group_members")
+      .select("group_id, groups!inner(id, name)")
+      .eq("user_id", user.id);
+
+    const groupIds = (userGroups || []).map(g => g.group_id);
+    const groupMap = new Map((userGroups || []).map(g => [g.group_id, (g as any).groups]));
+
     const allowedUserIds = [user.id, ...followingIds];
 
-    let query = supabase
+    let queryPosts = supabase
       .from("posts")
       .select("*")
       .order("created_at", { ascending: false })
       .range(0, PAGE_SIZE - 1);
 
     if (tagFilter) {
-      query = query.contains("tags", [tagFilter]);
+      queryPosts = queryPosts.contains("tags", [tagFilter]);
     } else {
-      query = query.in("user_id", allowedUserIds);
+      queryPosts = queryPosts.in("user_id", allowedUserIds);
     }
 
-    const { data: rawPosts } = await query;
+    const { data: rawPosts } = await queryPosts;
+    let combinedFeed: any[] = (rawPosts || []).map(p => ({ ...p, type: "post" }));
 
-    if (!rawPosts || rawPosts.length === 0) {
+    if (!tagFilter && groupIds.length > 0) {
+      // @ts-ignore
+      const { data: rawActivities } = await supabase
+        .from("group_activities")
+        .select("*")
+        .in("group_id", groupIds)
+        .order("created_at", { ascending: false })
+        .limit(PAGE_SIZE);
+
+      if (rawActivities) {
+        const mappedActivities = rawActivities.map((a: any) => ({
+          id: a.id,
+          user_id: a.user_id,
+          content: a.description || "Completou uma atividade no grupo!",
+          image_url: a.photo_url || a.image_url,
+          location: null,
+          created_at: a.created_at,
+          tags: [],
+          type: "group_activity" as const,
+          women_only: false,
+          group: groupMap.get(a.group_id) || { id: a.group_id, name: "Grupo" }
+        }));
+        combinedFeed = [...combinedFeed, ...mappedActivities];
+      }
+    }
+
+    if (combinedFeed.length === 0) {
       setPosts([]);
       setHasMore(false);
       setLoading(false);
       return;
     }
 
-    if (rawPosts.length < PAGE_SIZE) setHasMore(false);
+    if (rawPosts && rawPosts.length < PAGE_SIZE) setHasMore(false);
 
-    const enriched = await enrichPosts(rawPosts, user.id, followSet);
+    const enriched = await enrichPosts(combinedFeed, user.id, followSet);
     const ranked = rankPosts(enriched, followSet, user.id);
     setPosts(ranked);
     setLoading(false);
@@ -199,29 +219,64 @@ export function useFeed() {
     const followSet = new Set(followingIds);
     const allowedUserIds = [user.id, ...followingIds];
 
-    let query = supabase
+    const { data: userGroups } = await supabase
+      .from("group_members")
+      .select("group_id, groups!inner(id, name)")
+      .eq("user_id", user.id);
+
+    const groupIds = (userGroups || []).map(g => g.group_id);
+    const groupMap = new Map((userGroups || []).map(g => [g.group_id, (g as any).groups]));
+
+    let queryPosts = supabase
       .from("posts")
       .select("*")
       .order("created_at", { ascending: false })
       .range(from, to);
 
     if (activeTag) {
-      query = query.contains("tags", [activeTag]);
+      queryPosts = queryPosts.contains("tags", [activeTag]);
     } else {
-      query = query.in("user_id", allowedUserIds);
+      queryPosts = queryPosts.in("user_id", allowedUserIds);
     }
 
-    const { data: rawPosts } = await query;
+    const { data: rawPosts } = await queryPosts;
+    let combinedFeed: any[] = (rawPosts || []).map(p => ({ ...p, type: "post" }));
 
-    if (!rawPosts || rawPosts.length === 0) {
+    if (!activeTag && groupIds.length > 0) {
+      // @ts-ignore
+      const { data: rawActivities } = await supabase
+        .from("group_activities")
+        .select("*")
+        .in("group_id", groupIds)
+        .order("created_at", { ascending: false })
+        .range(from, to);
+
+      if (rawActivities) {
+        const mappedActivities = rawActivities.map((a: any) => ({
+          id: a.id,
+          user_id: a.user_id,
+          content: a.description || "Completou uma atividade no grupo!",
+          image_url: a.photo_url || a.image_url,
+          location: null,
+          created_at: a.created_at,
+          tags: [],
+          type: "group_activity" as const,
+          women_only: false,
+          group: groupMap.get(a.group_id) || { id: a.group_id, name: "Grupo" }
+        }));
+        combinedFeed = [...combinedFeed, ...mappedActivities];
+      }
+    }
+
+    if (combinedFeed.length === 0) {
       setHasMore(false);
       setLoadingMore(false);
       return;
     }
 
-    if (rawPosts.length < PAGE_SIZE) setHasMore(false);
+    if (rawPosts && rawPosts.length < PAGE_SIZE) setHasMore(false);
 
-    const enriched = await enrichPosts(rawPosts, user.id, followSet);
+    const enriched = await enrichPosts(combinedFeed, user.id, followSet);
     const ranked = rankPosts(enriched, followSet, user.id);
 
     setPosts(prev => {
@@ -249,16 +304,11 @@ export function useFeed() {
 
     if (post.is_liked) {
       await supabase.from("post_likes").delete().eq("post_id", postId).eq("user_id", user.id);
+      setPosts(prev => prev.map(p => p.id === postId ? { ...p, is_liked: false, likes_count: p.likes_count - 1 } : p));
     } else {
       await supabase.from("post_likes").insert({ post_id: postId, user_id: user.id });
-      sendNotification(user.id, post.user_id, "like", postId);
+      setPosts(prev => prev.map(p => p.id === postId ? { ...p, is_liked: true, likes_count: p.likes_count + 1 } : p));
     }
-
-    setPosts(prev => prev.map(p => p.id === postId ? {
-      ...p,
-      is_liked: !p.is_liked,
-      likes_count: p.is_liked ? p.likes_count - 1 : p.likes_count + 1,
-    } : p));
   };
 
   const toggleBookmark = async (postId: string) => {
@@ -268,59 +318,63 @@ export function useFeed() {
 
     if (post.is_bookmarked) {
       await supabase.from("post_bookmarks").delete().eq("post_id", postId).eq("user_id", user.id);
+      setPosts(prev => prev.map(p => p.id === postId ? { ...p, is_bookmarked: false } : p));
     } else {
       await supabase.from("post_bookmarks").insert({ post_id: postId, user_id: user.id });
+      setPosts(prev => prev.map(p => p.id === postId ? { ...p, is_bookmarked: true } : p));
     }
-
-    setPosts(prev => prev.map(p => p.id === postId ? { ...p, is_bookmarked: !p.is_bookmarked } : p));
   };
 
-  const createPost = async (content: string, imageFile?: File, tags?: string[], womenOnly?: boolean) => {
-    if (!user) return;
+  const updateCommentCount = (postId: string, change: number) => {
+    setPosts(prev => prev.map(p => p.id === postId ? { ...p, comments_count: Math.max(0, p.comments_count + change) } : p));
+  };
 
-    let image_url: string | null = null;
+  const createPost = async (content: string, imageFile: File | null, tags: string[], isWomenOnly = false) => {
+    if (!user) return;
+    const newPostId = crypto.randomUUID();
+    let imageUrl: string | null = null;
+    let location: string | null = null;
+
     if (imageFile) {
-      const ext = imageFile.name.split(".").pop();
-      const path = `${user.id}/${Date.now()}.${ext}`;
-      const { error } = await supabase.storage.from("social").upload(path, imageFile);
-      if (!error) {
-        const { data } = supabase.storage.from("social").getPublicUrl(path);
-        image_url = data.publicUrl;
+      const ext = imageFile.name.split(".").pop() || "jpg";
+      const filePath = `posts/${user.id}/${newPostId}.${ext}`;
+      const { error: uploadError } = await supabase.storage.from("social").upload(filePath, imageFile, { contentType: imageFile.type });
+      if (!uploadError) {
+        const { data: pbUrl } = supabase.storage.from("social").getPublicUrl(filePath);
+        imageUrl = pbUrl.publicUrl;
       }
     }
 
-    // Auto-extract hashtags from content
-    const contentTags = (content.match(/#(\w+)/g) || []).map(t => t.replace("#", "").toLowerCase());
-    const allTags = [...new Set([...contentTags, ...(tags || [])])];
-
-    await supabase.from("posts").insert({
+    const { error } = await supabase.from("posts").insert({
+      id: newPostId,
       user_id: user.id,
-      content,
-      image_url,
-      tags: allTags,
-      women_only: womenOnly || false,
+      content: content.trim() || null,
+      image_url: imageUrl,
+      location,
+      tags,
+      women_only: isWomenOnly
     });
-    await fetchPosts(activeTag);
+
+    if (!error) {
+      fetchPosts(activeTag);
+    }
+    return { error };
   };
 
-  const updateCommentCount = (postId: string, delta: number) => {
-    setPosts(prev => prev.map(p => p.id === postId ? { ...p, comments_count: Math.max(0, p.comments_count + delta) } : p));
-  };
-
-  const updatePost = async (postId: string, content: string) => {
-    if (!user) return;
-    const trimmed = content.trim();
-    // Auto-extract hashtags from content
-    const contentTags = (trimmed.match(/#(\w+)/g) || []).map(t => t.replace("#", "").toLowerCase());
-    
-    await supabase.from("posts").update({ content: trimmed, tags: contentTags }).eq("id", postId).eq("user_id", user.id);
-    setPosts(prev => prev.map(p => p.id === postId ? { ...p, content: trimmed, tags: contentTags } : p));
+  const updatePost = async (postId: string, content: string, tags: string[]) => {
+    const { error } = await supabase.from("posts").update({ content: content.trim() || null, tags }).eq("id", postId);
+    if (!error) {
+      setPosts(prev => prev.map(p => p.id === postId ? { ...p, content: content.trim() || null, tags } : p));
+    }
+    return { error };
   };
 
   const deletePost = async (postId: string) => {
-    if (!user) return;
-    await supabase.from("posts").delete().eq("id", postId).eq("user_id", user.id);
-    setPosts(prev => prev.filter(p => p.id !== postId));
+    const { error } = await supabase.from("posts").delete().eq("id", postId);
+    if (!error) {
+      setPosts(prev => prev.filter(p => p.id !== postId));
+    }
+    return { error };
   };
 
   return {
@@ -329,13 +383,13 @@ export function useFeed() {
     loadingMore,
     hasMore,
     activeTag,
+    filterByTag,
+    clearTagFilter,
     toggleLike,
     toggleBookmark,
     createPost,
     updatePost,
     deletePost,
-    filterByTag,
-    clearTagFilter,
     refetch: () => fetchPosts(activeTag),
     fetchMore: fetchMorePosts,
     updateCommentCount,

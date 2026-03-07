@@ -31,6 +31,7 @@ const ProfilePage = lazy(() => import("@/modules/profile/pages/ProfilePage"));
 const TreinAIPage = lazy(() => import("@/modules/ai/pages/TreinAIPage"));
 const SocialFeedPage = lazy(() => import("@/modules/social/pages/SocialFeedPage"));
 const UserProfilePage = lazy(() => import("@/modules/social/pages/UserProfilePage"));
+const InboxPage = lazy(() => import("@/modules/social/pages/InboxPage"));
 const DietAIPage = lazy(() => import("@/modules/ai/pages/DietAIPage"));
 const SettingsPage = lazy(() => import("@/modules/settings/pages/SettingsPage"));
 const GroupsPage = lazy(() => import("@/modules/groups/pages/GroupsPage"));
@@ -254,6 +255,7 @@ function AppRoutes() {
           <Route path="/workouts" element={<SuspensePageTransition><WorkoutsPage /></SuspensePageTransition>} />
           <Route path="/diet" element={<SuspensePageTransition><DietPage profile={profile} /></SuspensePageTransition>} />
           <Route path="/social" element={<SuspensePageTransition><SocialFeedPage /></SuspensePageTransition>} />
+          <Route path="/inbox" element={<SuspensePageTransition><InboxPage /></SuspensePageTransition>} />
           <Route path="/user/:userId" element={<SuspensePageTransition><UserProfilePage /></SuspensePageTransition>} />
           <Route path="/ai-trainer" element={<SuspensePageTransition><TreinAIPage /></SuspensePageTransition>} />
           <Route path="/ai-chef" element={<SuspensePageTransition><DietAIPage /></SuspensePageTransition>} />

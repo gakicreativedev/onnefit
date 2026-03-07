@@ -11,6 +11,7 @@ import {
   VerifiedCheckBold,
   MapPointBold,
   WomenBold,
+  UsersGroupTwoRoundedBold,
 } from "solar-icon-set";
 import { MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -82,6 +83,11 @@ export function FeedPostCard({ post, onLike, onBookmark, onComment, onFollow, on
               {(post as any).women_only && (
                 <span className="inline-flex items-center gap-0.5 rounded-full bg-pink-500/15 px-1.5 py-0.5 text-[10px] font-bold text-pink-500">
                   <WomenBold size={10} color="currentColor" /> Feminino
+                </span>
+              )}
+              {post.group && (
+                <span className="inline-flex items-center gap-0.5 rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] font-bold text-primary max-w-[100px] truncate" title={post.group.name}>
+                  <UsersGroupTwoRoundedBold size={10} color="currentColor" /> {post.group.name}
                 </span>
               )}
               <span className="text-[11px] text-muted-foreground">· {timeAgo}</span>
@@ -165,11 +171,10 @@ export function FeedPostCard({ post, onLike, onBookmark, onComment, onFollow, on
           <motion.button
             onClick={handleLike}
             whileTap={{ scale: 1.3 }}
-            className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 transition-all text-sm font-bold ${
-              post.is_liked
+            className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 transition-all text-sm font-bold ${post.is_liked
                 ? "bg-destructive/15 text-destructive"
                 : "text-foreground hover:bg-muted/60"
-            }`}
+              }`}
           >
             {post.is_liked ? (
               <HeartBold size={18} color="currentColor" />

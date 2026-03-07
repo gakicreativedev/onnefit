@@ -59,6 +59,16 @@ export function StoryViewer({ group, onClose, onOpenDM }: StoryViewerProps) {
     return () => clearTimeout(timer);
   }, [currentIdx, group, onClose, isPaused]);
 
+  // Log view
+  useEffect(() => {
+    if (!group || !user || user.id === group.user_id) return;
+    const currentStory = group.stories[currentIdx];
+    supabase.from("story_views").upsert(
+      { story_id: currentStory.id, user_id: user.id },
+      { onConflict: "story_id,user_id", ignoreDuplicates: true }
+    ).then();
+  }, [currentIdx, group, user]);
+
   if (!group) return null;
 
   const story = group.stories[currentIdx];
@@ -181,6 +191,47 @@ export function StoryViewer({ group, onClose, onOpenDM }: StoryViewerProps) {
           )}
         </AnimatePresence>
 
+        {/* Bottom: Author View (Views & Reactions) */}
+        {isOwnStory && (
+          <div className="absolute bottom-0 left-0 right-0 z-30 bg-background/95 backdrop-blur-md rounded-t-2xl p-4 transition-transform transform translate-y-0 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] max-h-[50vh] overflow-y-auto">
+            <div className="w-10 h-1 rounded-full bg-muted-foreground/30 mx-auto mb-3" />
+            <h3 className="text-sm font-bold flex items-center gap-2 mb-4">
+              <PlainBold size={16} className="text-primary" />
+              Interações ({story.views?.length || 0})
+            </h3>
+
+            <div className="space-y-3">
+              {story.views?.length === 0 ? (
+                <p className="text-xs text-muted-foreground text-center py-4">Ninguém visualizou ainda.</p>
+              ) : (
+                story.views?.map(viewer => {
+                  const reaction = story.reactions?.find(r => r.user_id === viewer.user_id);
+                  const IconMatch = reaction ? REACTION_ICONS.find(r => r.key === reaction.emoji) : null;
+                  return (
+                    <div key={viewer.user_id} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="h-8 w-8 rounded-full overflow-hidden bg-muted flex items-center justify-center">
+                          {viewer.avatar_url ? (
+                            <img src={viewer.avatar_url} alt="" className="h-full w-full object-cover" />
+                          ) : (
+                            <span className="text-xs font-bold text-primary">{(viewer.name || "U").charAt(0)}</span>
+                          )}
+                        </div>
+                        <span className="text-sm font-medium">{viewer.name}</span>
+                      </div>
+                      {IconMatch && (
+                        <div className="h-8 w-8 rounded-full bg-muted/50 flex items-center justify-center">
+                          <IconMatch.icon size={16} color={IconMatch.color} />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Bottom: Reply input + Reactions */}
         {!isOwnStory && (
           <div className="absolute bottom-4 left-3 right-3 z-10 flex flex-col gap-2">
@@ -233,7 +284,7 @@ export function StoryViewer({ group, onClose, onOpenDM }: StoryViewerProps) {
         )}
 
         {/* Tap zones */}
-        <div className="absolute inset-0 flex" style={{ top: "60px", bottom: isOwnStory ? "0" : "100px" }}>
+        <div className="absolute inset-0 flex" style={{ top: "60px", bottom: isOwnStory ? "150px" : "100px" }}>
           <div className="w-1/3" onClick={() => setCurrentIdx(Math.max(0, currentIdx - 1))} />
           <div className="w-1/3" onClick={() => setIsPaused(p => !p)} />
           <div className="w-1/3" onClick={() => {
